@@ -144,7 +144,7 @@ class Tuya : public Component, public uart::UARTDevice {
   TuyaInitState init_state_ = TuyaInitState::INIT_HEARTBEAT;
   bool init_failed_{false};
   int init_retries_{0};
-  uint8_t protocol_version_ = -1;
+  int16_t protocol_version_{-1};
   InternalGPIOPin *status_pin_{nullptr};
   int status_pin_reported_ = -1;
   int reset_pin_reported_ = -1;
