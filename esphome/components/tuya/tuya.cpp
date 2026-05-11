@@ -157,6 +157,7 @@ void Tuya::handle_char_(uint8_t c) {
 void Tuya::handle_command_(uint8_t command, uint8_t version, const uint8_t *buffer, size_t len) {
   TuyaCommandType command_type = (TuyaCommandType) command;
   this->protocol_version_ = version;
+  this->protocol_version_known_ = true;
 
   if (this->expected_response_.has_value() && this->expected_response_ == command_type) {
     this->expected_response_.reset();
@@ -166,7 +167,7 @@ void Tuya::handle_command_(uint8_t command, uint8_t version, const uint8_t *buff
 
   switch (command_type) {
     case TuyaCommandType::HEARTBEAT:
-      if (len < 1) {
+      if (buffer == nullptr || len < 1) {
         ESP_LOGW(TAG, "Received malformed heartbeat response with empty payload");
         break;
       }
@@ -461,7 +462,7 @@ void Tuya::handle_datapoints_(const uint8_t *buffer, size_t len) {
 void Tuya::send_raw_command_(TuyaCommand command) {
   uint8_t len_hi = (uint8_t) (command.payload.size() >> 8);
   uint8_t len_lo = (uint8_t) (command.payload.size() & 0xFF);
-  uint8_t version = this->protocol_version_ >= 0 ? static_cast<uint8_t>(this->protocol_version_) : 0;
+  uint8_t version = this->protocol_version_known_ ? this->protocol_version_ : 0;
 
   this->last_command_timestamp_ = millis();
   switch (command.cmd) {
@@ -551,7 +552,7 @@ uint8_t Tuya::get_wifi_status_code_() {
     status = 0x03;
 
     // Protocol version 3 also supports specifying when connected to "the cloud"
-    if (this->protocol_version_ >= 0x03 && remote_is_connected()) {
+    if (this->protocol_version_known_ && this->protocol_version_ >= 0x03 && remote_is_connected()) {
       status = 0x04;
     }
   } else {
